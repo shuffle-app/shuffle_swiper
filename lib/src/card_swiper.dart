@@ -178,8 +178,7 @@ class CardSwiper extends StatefulWidget {
   State createState() => _CardSwiperState();
 }
 
-class _CardSwiperState<T extends Widget> extends State<CardSwiper>
-    with SingleTickerProviderStateMixin {
+class _CardSwiperState<T extends Widget> extends State<CardSwiper> with SingleTickerProviderStateMixin {
   late CardAnimation _cardAnimation;
   late AnimationController _animationController;
 
@@ -227,21 +226,16 @@ class _CardSwiperState<T extends Widget> extends State<CardSwiper>
     if (direction == CardSwiperDirection.none) {
       _detectedVerticalDirection = direction;
       _detectedHorizontalDirection = direction;
-      widget.onSwipeDirectionChange
-          ?.call(_detectedHorizontalDirection, _detectedVerticalDirection);
-    } else if (direction == CardSwiperDirection.right ||
-        direction == CardSwiperDirection.left) {
+      widget.onSwipeDirectionChange?.call(_detectedHorizontalDirection, _detectedVerticalDirection);
+    } else if (direction == CardSwiperDirection.right || direction == CardSwiperDirection.left) {
       if (_detectedHorizontalDirection != direction) {
         _detectedHorizontalDirection = direction;
-        widget.onSwipeDirectionChange
-            ?.call(_detectedHorizontalDirection, _detectedVerticalDirection);
+        widget.onSwipeDirectionChange?.call(_detectedHorizontalDirection, _detectedVerticalDirection);
       }
-    } else if (direction == CardSwiperDirection.top ||
-        direction == CardSwiperDirection.bottom) {
+    } else if (direction == CardSwiperDirection.top || direction == CardSwiperDirection.bottom) {
       if (_detectedVerticalDirection != direction) {
         _detectedVerticalDirection = direction;
-        widget.onSwipeDirectionChange
-            ?.call(_detectedHorizontalDirection, _detectedVerticalDirection);
+        widget.onSwipeDirectionChange?.call(_detectedHorizontalDirection, _detectedVerticalDirection);
       }
     }
   }
@@ -257,87 +251,68 @@ class _CardSwiperState<T extends Widget> extends State<CardSwiper>
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
+        final boxSizeWithoutPadding = constraints.deflate(widget.padding.resolve(Directionality.of(context)));
+
         return Padding(
           padding: widget.padding,
-          child: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              return Stack(
-                clipBehavior: Clip.none,
-                fit: StackFit.expand,
-                children: List.generate(numberOfCardsOnScreen(), (index) {
-                  if (index == 0) return _frontItem(constraints);
-                  return _backItem(constraints, index);
-                }).reversed.toList(),
+          child: Stack(
+            clipBehavior: Clip.none,
+            fit: StackFit.expand,
+            children: List.generate(numberOfCardsOnScreen(), (index) {
+              if (index == 0) {
+                return _FrontItem(
+                  cardAnimation: _cardAnimation,
+                  constraints: boxSizeWithoutPadding,
+                  onTap: () async {
+                    if (widget.isDisabled) {
+                      await widget.onTapDisabled?.call();
+                    }
+                  },
+                  onPanUpdate: (tapInfo) {
+                    if (!widget.isDisabled) {
+                      setState(
+                        () => _cardAnimation.update(
+                          tapInfo.delta.dx,
+                          tapInfo.delta.dy,
+                          _tappedOnTop,
+                        ),
+                      );
+                    }
+                  },
+                  onPanStart: (tapInfo) {
+                    if (!widget.isDisabled) {
+                      final renderBox = context.findRenderObject()! as RenderBox;
+                      final position = renderBox.globalToLocal(tapInfo.globalPosition);
+
+                      if (position.dy < renderBox.size.height / 2) _tappedOnTop = true;
+                    }
+                  },
+                  onPanEnd: (tapInfo) {
+                    if (!widget.isDisabled) {
+                      _onEndAnimation();
+                    }
+                  },
+                  child: widget.cardBuilder(
+                        context,
+                        _currentIndex!,
+                        (100 * _cardAnimation.left / widget.threshold).ceil(),
+                        (100 * _cardAnimation.top / widget.threshold).ceil(),
+                      ) ??
+                      const SizedBox(),
+                );
+              }
+              return _BackItem(
+                index: index,
+                constraints: boxSizeWithoutPadding,
+                cardAnimation: _cardAnimation,
+                scale: widget.scale,
+                backCardOffset: widget.backCardOffset,
+                child: widget.cardBuilder(context, getValidIndexOffset(index)!, 0, 0) ?? const SizedBox(),
               );
-            },
+            }).reversed.toList(),
           ),
         );
       },
-    );
-  }
-
-  Widget _frontItem(BoxConstraints constraints) {
-    return Positioned(
-      left: _cardAnimation.left,
-      top: _cardAnimation.top,
-      child: GestureDetector(
-        child: Transform.rotate(
-          angle: _cardAnimation.angle,
-          child: ConstrainedBox(
-            constraints: constraints,
-            child: widget.cardBuilder(
-              context,
-              _currentIndex!,
-              (100 * _cardAnimation.left / widget.threshold).ceil(),
-              (100 * _cardAnimation.top / widget.threshold).ceil(),
-            ),
-          ),
-        ),
-        onTap: () async {
-          if (widget.isDisabled) {
-            await widget.onTapDisabled?.call();
-          }
-        },
-        onPanStart: (tapInfo) {
-          if (!widget.isDisabled) {
-            final renderBox = context.findRenderObject()! as RenderBox;
-            final position = renderBox.globalToLocal(tapInfo.globalPosition);
-
-            if (position.dy < renderBox.size.height / 2) _tappedOnTop = true;
-          }
-        },
-        onPanUpdate: (tapInfo) {
-          if (!widget.isDisabled) {
-            setState(
-              () => _cardAnimation.update(
-                tapInfo.delta.dx,
-                tapInfo.delta.dy,
-                _tappedOnTop,
-              ),
-            );
-          }
-        },
-        onPanEnd: (tapInfo) {
-          if (_canSwipe) {
-            _tappedOnTop = false;
-            _onEndAnimation();
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _backItem(BoxConstraints constraints, int index) {
-    return Positioned(
-      top: (widget.backCardOffset.dy * index) - _cardAnimation.difference.dy,
-      left: (widget.backCardOffset.dx * index) - _cardAnimation.difference.dx,
-      child: Transform.scale(
-        scale: _cardAnimation.scale - ((1 - widget.scale) * (index - 1)),
-        child: ConstrainedBox(
-          constraints: constraints,
-          child: widget.cardBuilder(context, getValidIndexOffset(index)!, 0, 0),
-        ),
-      ),
     );
   }
 
@@ -382,9 +357,7 @@ class _CardSwiperState<T extends Widget> extends State<CardSwiper>
 
   Future<void> _handleCompleteSwipe() async {
     final isLastCard = _currentIndex! == widget.cardsCount - 1;
-    final shouldCancelSwipe = await widget.onSwipe
-            ?.call(_currentIndex!, _nextIndex, _detectedDirection) ==
-        false;
+    final shouldCancelSwipe = await widget.onSwipe?.call(_currentIndex!, _nextIndex, _detectedDirection) == false;
 
     if (shouldCancelSwipe) {
       return;
@@ -410,25 +383,17 @@ class _CardSwiperState<T extends Widget> extends State<CardSwiper>
 
   void _onEndAnimation() {
     if (_cardAnimation.left.abs() > widget.threshold) {
-      final direction = _cardAnimation.left.isNegative
-          ? CardSwiperDirection.left
-          : CardSwiperDirection.right;
-      if (direction == CardSwiperDirection.left &&
-              widget.allowedSwipeDirection.left ||
-          direction == CardSwiperDirection.right &&
-              widget.allowedSwipeDirection.right) {
+      final direction = _cardAnimation.left.isNegative ? CardSwiperDirection.left : CardSwiperDirection.right;
+      if (direction == CardSwiperDirection.left && widget.allowedSwipeDirection.left ||
+          direction == CardSwiperDirection.right && widget.allowedSwipeDirection.right) {
         _swipe(direction);
       } else {
         _goBack();
       }
     } else if (_cardAnimation.top.abs() > widget.threshold) {
-      final direction = _cardAnimation.top.isNegative
-          ? CardSwiperDirection.top
-          : CardSwiperDirection.bottom;
-      if (direction == CardSwiperDirection.top &&
-              widget.allowedSwipeDirection.up ||
-          direction == CardSwiperDirection.bottom &&
-              widget.allowedSwipeDirection.down) {
+      final direction = _cardAnimation.top.isNegative ? CardSwiperDirection.top : CardSwiperDirection.bottom;
+      if (direction == CardSwiperDirection.top && widget.allowedSwipeDirection.up ||
+          direction == CardSwiperDirection.bottom && widget.allowedSwipeDirection.down) {
         _swipe(direction);
       } else {
         _goBack();
@@ -496,5 +461,93 @@ class _CardSwiperState<T extends Widget> extends State<CardSwiper>
       return null;
     }
     return index % widget.cardsCount;
+  }
+}
+
+class _FrontItem extends StatelessWidget {
+  final BoxConstraints constraints;
+  final CardAnimation cardAnimation;
+  final VoidCallback onTap;
+  final Function(DragUpdateDetails) onPanUpdate;
+  final Function(DragEndDetails) onPanEnd;
+  final Function(DragStartDetails) onPanStart;
+  final Widget child;
+
+  const _FrontItem({
+    Key? key,
+    required this.constraints,
+    required this.cardAnimation,
+    required this.onTap,
+    required this.onPanUpdate,
+    required this.onPanEnd,
+    required this.onPanStart,
+    required this.child,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: cardAnimation.animationController,
+      builder: (context, child) {
+        return Positioned(
+          left: cardAnimation.left,
+          top: cardAnimation.top,
+          child: GestureDetector(
+            onTap: onTap,
+            onPanStart: onPanStart,
+            onPanUpdate: onPanUpdate,
+            onPanEnd: onPanEnd,
+            child: Transform.rotate(
+              angle: cardAnimation.angle,
+              child: ConstrainedBox(
+                constraints: constraints,
+                child: child,
+              ),
+            ),
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+}
+
+class _BackItem extends StatelessWidget {
+  final int index;
+  final BoxConstraints constraints;
+  final CardAnimation cardAnimation;
+  final double scale;
+  final Widget child;
+  final Offset backCardOffset;
+
+  const _BackItem({
+    Key? key,
+    required this.index,
+    required this.constraints,
+    required this.cardAnimation,
+    required this.scale,
+    required this.child,
+    required this.backCardOffset,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: cardAnimation.animationController,
+      builder: (context, child) {
+        return Positioned(
+          top: (backCardOffset.dy * index) - cardAnimation.difference.dy,
+          left: (backCardOffset.dx * index) - cardAnimation.difference.dx,
+          child: Transform.scale(
+            scale: cardAnimation.scale - ((1 - scale) * (index - 1)),
+            child: ConstrainedBox(
+              constraints: constraints,
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: child,
+    );
   }
 }
