@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -45,13 +47,13 @@ void main() {
 
     for (final isDisabled in [false, true]) {
       group('isDisabled=$isDisabled', () {
-        testWidgets('swipe() should swipe the card to the defined direction',
-            (tester) async {
+        testWidgets('swipe() should swipe the card to the defined direction', (tester) async {
           final controller = CardSwiperController();
           var direction = CardSwiperDirection.none;
 
           await tester.pumpApp(
             CardSwiper(
+              size: const Size(100, 100),
               isDisabled: isDisabled,
               controller: controller,
               cardsCount: 10,
@@ -70,13 +72,13 @@ void main() {
           expect(direction, CardSwiperDirection.top);
         });
 
-        testWidgets('swipeLeft() should swipe the card to the left',
-            (tester) async {
+        testWidgets('swipeLeft() should swipe the card to the left', (tester) async {
           final controller = CardSwiperController();
           var direction = CardSwiperDirection.none;
 
           await tester.pumpApp(
             CardSwiper(
+              size: const Size(100, 100),
               isDisabled: isDisabled,
               controller: controller,
               cardsCount: 10,
@@ -95,13 +97,13 @@ void main() {
           expect(direction, CardSwiperDirection.left);
         });
 
-        testWidgets('swipeRight() should swipe the card to the right',
-            (tester) async {
+        testWidgets('swipeRight() should swipe the card to the right', (tester) async {
           final controller = CardSwiperController();
           var direction = CardSwiperDirection.none;
 
           await tester.pumpApp(
             CardSwiper(
+              size: const Size(100, 100),
               isDisabled: isDisabled,
               controller: controller,
               cardsCount: 10,
@@ -119,13 +121,13 @@ void main() {
           expect(direction, CardSwiperDirection.right);
         });
 
-        testWidgets('swipeTop() should swipe the card to the top',
-            (tester) async {
+        testWidgets('swipeTop() should swipe the card to the top', (tester) async {
           final controller = CardSwiperController();
           var direction = CardSwiperDirection.none;
 
           await tester.pumpApp(
             CardSwiper(
+              size: const Size(100, 100),
               isDisabled: isDisabled,
               controller: controller,
               cardsCount: 10,
@@ -144,13 +146,13 @@ void main() {
           expect(direction, CardSwiperDirection.top);
         });
 
-        testWidgets('swipeBottom() should swipe the card to the bottom',
-            (tester) async {
+        testWidgets('swipeBottom() should swipe the card to the bottom', (tester) async {
           final controller = CardSwiperController();
           var direction = CardSwiperDirection.none;
 
           await tester.pumpApp(
             CardSwiper(
+              size: const Size(100, 100),
               isDisabled: isDisabled,
               controller: controller,
               cardsCount: 10,
@@ -175,6 +177,7 @@ void main() {
 
             await tester.pumpApp(
               CardSwiper(
+                size: const Size(100, 100),
                 isDisabled: isDisabled,
                 controller: controller,
                 cardsCount: 10,
@@ -199,6 +202,7 @@ void main() {
 
             await tester.pumpApp(
               CardSwiper(
+                size: const Size(100, 100),
                 isDisabled: isDisabled,
                 controller: controller,
                 cardsCount: 10,
@@ -228,6 +232,7 @@ void main() {
 
             await tester.pumpApp(
               CardSwiper(
+                size: const Size(100, 100),
                 isDisabled: isDisabled,
                 controller: controller,
                 cardsCount: 10,
@@ -257,6 +262,7 @@ void main() {
 
             await tester.pumpApp(
               CardSwiper(
+                size: const Size(100, 100),
                 isDisabled: isDisabled,
                 controller: controller,
                 cardsCount: 10,
@@ -286,6 +292,7 @@ void main() {
 
             await tester.pumpApp(
               CardSwiper(
+                size: const Size(100, 100),
                 isDisabled: isDisabled,
                 controller: controller,
                 cardsCount: 10,
@@ -309,12 +316,12 @@ void main() {
             expect(direction, CardSwiperDirection.bottom);
           });
 
-          testWidgets('should not undo if onUndo returns false',
-              (tester) async {
+          testWidgets('should not undo if onUndo returns false', (tester) async {
             final controller = CardSwiperController();
 
             await tester.pumpApp(
               CardSwiper(
+                size: const Size(100, 100),
                 isDisabled: isDisabled,
                 controller: controller,
                 cardsCount: 10,

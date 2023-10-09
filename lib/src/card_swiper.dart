@@ -126,10 +126,17 @@ class CardSwiper extends StatefulWidget {
   /// Must be a positive value. Defaults to Offset(0, 40).
   final Offset backCardOffset;
 
+  /// The size of the swiper.
+  ///
+  /// In order to speed up layout computing phase swiper requires a fixed size.
+  /// It will allow to avoid unnecessary layout computations.
+  final Size size;
+
   const CardSwiper({
     Key? key,
     required this.cardBuilder,
     required this.cardsCount,
+    required this.size,
     this.controller,
     this.initialIndex = 0,
     this.padding = const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
@@ -249,70 +256,67 @@ class _CardSwiperState<T extends Widget> extends State<CardSwiper> with SingleTi
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final boxSizeWithoutPadding = constraints.deflate(widget.padding.resolve(Directionality.of(context)));
-
-        return Padding(
-          padding: widget.padding,
-          child: Stack(
-            clipBehavior: Clip.none,
-            fit: StackFit.expand,
-            children: List.generate(numberOfCardsOnScreen(), (index) {
-              if (index == 0) {
-                return _FrontItem(
-                  cardAnimation: _cardAnimation,
-                  constraints: boxSizeWithoutPadding,
-                  onTap: () async {
-                    if (widget.isDisabled) {
-                      await widget.onTapDisabled?.call();
-                    }
-                  },
-                  onPanUpdate: (tapInfo) {
-                    if (!widget.isDisabled) {
-                      setState(
-                        () => _cardAnimation.update(
-                          tapInfo.delta.dx,
-                          tapInfo.delta.dy,
-                          _tappedOnTop,
-                        ),
-                      );
-                    }
-                  },
-                  onPanStart: (tapInfo) {
-                    if (!widget.isDisabled) {
-                      final renderBox = context.findRenderObject()! as RenderBox;
-                      final position = renderBox.globalToLocal(tapInfo.globalPosition);
-
-                      if (position.dy < renderBox.size.height / 2) _tappedOnTop = true;
-                    }
-                  },
-                  onPanEnd: (tapInfo) {
-                    if (!widget.isDisabled) {
-                      _onEndAnimation();
-                    }
-                  },
-                  child: widget.cardBuilder(
-                        context,
-                        _currentIndex!,
-                        (100 * _cardAnimation.left / widget.threshold).ceil(),
-                        (100 * _cardAnimation.top / widget.threshold).ceil(),
-                      ) ??
-                      const SizedBox(),
-                );
-              }
-              return _BackItem(
-                index: index,
-                constraints: boxSizeWithoutPadding,
+    return Padding(
+      padding: widget.padding,
+      child: SizedBox.fromSize(
+        size: widget.size,
+        child: Stack(
+          clipBehavior: Clip.none,
+          fit: StackFit.expand,
+          children: List.generate(numberOfCardsOnScreen, (index) {
+            if (index == 0) {
+              return _FrontItem(
                 cardAnimation: _cardAnimation,
-                scale: widget.scale,
-                backCardOffset: widget.backCardOffset,
-                child: widget.cardBuilder(context, getValidIndexOffset(index)!, 0, 0) ?? const SizedBox(),
+                constraints: BoxConstraints.tight(widget.size),
+                onTap: () async {
+                  if (widget.isDisabled) {
+                    await widget.onTapDisabled?.call();
+                  }
+                },
+                onPanUpdate: (tapInfo) {
+                  if (!widget.isDisabled) {
+                    setState(
+                      () => _cardAnimation.update(
+                        tapInfo.delta.dx,
+                        tapInfo.delta.dy,
+                        _tappedOnTop,
+                      ),
+                    );
+                  }
+                },
+                onPanStart: (tapInfo) {
+                  if (!widget.isDisabled) {
+                    final renderBox = context.findRenderObject()! as RenderBox;
+                    final position = renderBox.globalToLocal(tapInfo.globalPosition);
+
+                    if (position.dy < renderBox.size.height / 2) _tappedOnTop = true;
+                  }
+                },
+                onPanEnd: (tapInfo) {
+                  if (!widget.isDisabled) {
+                    _onEndAnimation();
+                  }
+                },
+                child: widget.cardBuilder(
+                      context,
+                      _currentIndex!,
+                      (100 * _cardAnimation.left / widget.threshold).ceil(),
+                      (100 * _cardAnimation.top / widget.threshold).ceil(),
+                    ) ??
+                    const SizedBox(),
               );
-            }).reversed.toList(),
-          ),
-        );
-      },
+            }
+            return _BackItem(
+              index: index,
+              constraints: BoxConstraints.tight(widget.size),
+              cardAnimation: _cardAnimation,
+              scale: widget.scale,
+              backCardOffset: widget.backCardOffset,
+              child: widget.cardBuilder(context, getValidIndexOffset(index)!, 0, 0) ?? const SizedBox(),
+            );
+          }).reversed.toList(),
+        ),
+      ),
     );
   }
 
@@ -437,7 +441,7 @@ class _CardSwiperState<T extends Widget> extends State<CardSwiper> with SingleTi
     _cardAnimation.animateUndo(context, direction);
   }
 
-  int numberOfCardsOnScreen() {
+  int get numberOfCardsOnScreen {
     if (widget.isLoop) {
       return widget.numberOfCardsDisplayed;
     }

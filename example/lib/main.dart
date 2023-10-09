@@ -40,6 +40,10 @@ class _ExamplePageState extends State<Example> {
           children: [
             Flexible(
               child: CardSwiper(
+                size: Size(
+                  MediaQuery.of(context).size.width * 0.75,
+                  MediaQuery.of(context).size.height * 0.75,
+                ),
                 controller: controller,
                 cardsCount: cards.length,
                 onSwipe: _onSwipe,
