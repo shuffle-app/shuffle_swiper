@@ -202,8 +202,6 @@ class _CardSwiperState<T extends Widget> extends State<CardSwiper> with SingleTi
 
   int? get _nextIndex => getValidIndexOffset(1);
 
-  bool get _canSwipe => _currentIndex != null && !widget.isDisabled;
-
   @override
   void initState() {
     super.initState();
@@ -307,12 +305,8 @@ class _CardSwiperState<T extends Widget> extends State<CardSwiper> with SingleTi
               );
             }
             return _BackItem(
-              index: index,
               constraints: BoxConstraints.tight(widget.size),
-              cardAnimation: _cardAnimation,
-              scale: widget.scale,
-              backCardOffset: widget.backCardOffset,
-              child: widget.cardBuilder(context, getValidIndexOffset(index)!, 0, 0) ?? const SizedBox(),
+              child: widget.cardBuilder(context, getValidIndexOffset(index)!, 0, 0) ?? const SizedBox.shrink(),
             );
           }).reversed.toList(),
         ),
@@ -490,67 +484,41 @@ class _FrontItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: cardAnimation.animationController,
-      builder: (context, child) {
-        return Positioned(
-          left: cardAnimation.left,
-          top: cardAnimation.top,
-          child: GestureDetector(
-            onTap: onTap,
-            onPanStart: onPanStart,
-            onPanUpdate: onPanUpdate,
-            onPanEnd: onPanEnd,
-            child: Transform.rotate(
-              angle: cardAnimation.angle,
-              child: ConstrainedBox(
-                constraints: constraints,
-                child: child,
-              ),
-            ),
+    return AnimatedPositioned(
+      duration: Duration.zero,
+      left: cardAnimation.left,
+      top: cardAnimation.top,
+      child: GestureDetector(
+        onTap: onTap,
+        onPanStart: onPanStart,
+        onPanUpdate: onPanUpdate,
+        onPanEnd: onPanEnd,
+        child: Transform.rotate(
+          angle: cardAnimation.angle,
+          child: ConstrainedBox(
+            constraints: constraints,
+            child: child,
           ),
-        );
-      },
-      child: child,
+        ),
+      ),
     );
   }
 }
 
 class _BackItem extends StatelessWidget {
-  final int index;
   final BoxConstraints constraints;
-  final CardAnimation cardAnimation;
-  final double scale;
   final Widget child;
-  final Offset backCardOffset;
 
   const _BackItem({
     Key? key,
-    required this.index,
     required this.constraints,
-    required this.cardAnimation,
-    required this.scale,
     required this.child,
-    required this.backCardOffset,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: cardAnimation.animationController,
-      builder: (context, child) {
-        return Positioned(
-          top: (backCardOffset.dy * index) - cardAnimation.difference.dy,
-          left: (backCardOffset.dx * index) - cardAnimation.difference.dx,
-          child: Transform.scale(
-            scale: cardAnimation.scale - ((1 - scale) * (index - 1)),
-            child: ConstrainedBox(
-              constraints: constraints,
-              child: child,
-            ),
-          ),
-        );
-      },
+    return ConstrainedBox(
+      constraints: constraints,
       child: child,
     );
   }
