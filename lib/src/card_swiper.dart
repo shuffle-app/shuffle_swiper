@@ -258,57 +258,59 @@ class _CardSwiperState<T extends Widget> extends State<CardSwiper> with SingleTi
       padding: widget.padding,
       child: SizedBox.fromSize(
         size: widget.size,
-        child: Stack(
-          clipBehavior: Clip.none,
-          fit: StackFit.expand,
-          children: List.generate(numberOfCardsOnScreen, (index) {
-            if (index == 0) {
-              return _FrontItem(
-                cardAnimation: _cardAnimation,
-                constraints: BoxConstraints.tight(widget.size),
-                onTap: () async {
-                  if (widget.isDisabled) {
-                    await widget.onTapDisabled?.call();
-                  }
-                },
-                onPanUpdate: (tapInfo) {
-                  if (!widget.isDisabled) {
-                    setState(
-                      () => _cardAnimation.update(
-                        tapInfo.delta.dx,
-                        tapInfo.delta.dy,
-                        _tappedOnTop,
-                      ),
-                    );
-                  }
-                },
-                onPanStart: (tapInfo) {
-                  if (!widget.isDisabled) {
-                    final renderBox = context.findRenderObject()! as RenderBox;
-                    final position = renderBox.globalToLocal(tapInfo.globalPosition);
+        child: RepaintBoundary(
+          child: Stack(
+            clipBehavior: Clip.none,
+            fit: StackFit.expand,
+            children: List.generate(numberOfCardsOnScreen, (index) {
+              if (index == 0) {
+                return _FrontItem(
+                  cardAnimation: _cardAnimation,
+                  constraints: BoxConstraints.tight(widget.size),
+                  onTap: () async {
+                    if (widget.isDisabled) {
+                      await widget.onTapDisabled?.call();
+                    }
+                  },
+                  onPanUpdate: (tapInfo) {
+                    if (!widget.isDisabled) {
+                      setState(
+                        () => _cardAnimation.update(
+                          tapInfo.delta.dx,
+                          tapInfo.delta.dy,
+                          _tappedOnTop,
+                        ),
+                      );
+                    }
+                  },
+                  onPanStart: (tapInfo) {
+                    if (!widget.isDisabled) {
+                      final renderBox = context.findRenderObject()! as RenderBox;
+                      final position = renderBox.globalToLocal(tapInfo.globalPosition);
 
-                    if (position.dy < renderBox.size.height / 2) _tappedOnTop = true;
-                  }
-                },
-                onPanEnd: (tapInfo) {
-                  if (!widget.isDisabled) {
-                    _onEndAnimation();
-                  }
-                },
-                child: widget.cardBuilder(
-                      context,
-                      _currentIndex!,
-                      (100 * _cardAnimation.left / widget.threshold).ceil(),
-                      (100 * _cardAnimation.top / widget.threshold).ceil(),
-                    ) ??
-                    const SizedBox(),
+                      if (position.dy < renderBox.size.height / 2) _tappedOnTop = true;
+                    }
+                  },
+                  onPanEnd: (tapInfo) {
+                    if (!widget.isDisabled) {
+                      _onEndAnimation();
+                    }
+                  },
+                  child: widget.cardBuilder(
+                        context,
+                        _currentIndex!,
+                        (100 * _cardAnimation.left / widget.threshold).ceil(),
+                        (100 * _cardAnimation.top / widget.threshold).ceil(),
+                      ) ??
+                      const SizedBox(),
+                );
+              }
+              return _BackItem(
+                constraints: BoxConstraints.tight(widget.size),
+                child: widget.cardBuilder(context, getValidIndexOffset(index)!, 0, 0) ?? const SizedBox.shrink(),
               );
-            }
-            return _BackItem(
-              constraints: BoxConstraints.tight(widget.size),
-              child: widget.cardBuilder(context, getValidIndexOffset(index)!, 0, 0) ?? const SizedBox.shrink(),
-            );
-          }).reversed.toList(),
+            }).reversed.toList(),
+          ),
         ),
       ),
     );
